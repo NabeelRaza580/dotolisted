@@ -1,98 +1,54 @@
-
 const express = require('express');
-const bodyParser = require('body-parser');
 const cors = require('cors');
-
-
 const app = express();
 const PORT = 3000;
 
+// Middleware
+app.use(cors());
+app.use(express.json());
 
-app.use(cors()); 
-app.use(bodyParser.json());
-
-
+// In-memory task storage
 let tasks = [
-    { id: 1, title: 'Learn Node.js', completed: false },
-    { id: 2, title: 'Create a To-Do API', completed: false },
-    { id: 3, title: 'Deploy the application', completed: false }
+    { id: 1, taskName: "Learn Express.js" },
+    { id: 2, taskName: "Study API Testing" }
 ];
 
-const generateId = () => {
-    return tasks.length > 0 ? Math.max(...tasks.map(task => task.id)) + 1 : 1;
-};
+// Helper function to generate IDs
+const generateId = () => tasks.length > 0 ? Math.max(...tasks.map(task => task.id)) + 1 : 1;
 
-
-
-
-app.get('/tasks', (req, res) => {
-    res.json(tasks);
-});
-
-app.get('/tasks/:id', (req, res) => {
-    const taskId = parseInt(req.params.id);
-    const task = tasks.find(t => t.id === taskId);
+// ✅ POST /addTask - Add new task
+app.post('/addTask', (req, res) => {
+    const { taskName } = req.body;
     
-    if (task) {
-        res.json(task);
-    } else {
-        res.status(404).json({ message: 'Task not found' });
+    if (!taskName) {
+        return res.status(400).json({ error: "Task name is required!" });
     }
-});
 
-// POST /tasks - Create a new task
-app.post('/tasks', (req, res) => {
-    const { title } = req.body;
-    
-    if (!title) {
-        return res.status(400).json({ message: 'Title is required' });
-    }
-    
-    const newTask = {
-        id: generateId(),
-        title,
-        completed: false
-    };
-    
+    const newTask = { id: generateId(), taskName };
     tasks.push(newTask);
     res.status(201).json(newTask);
 });
 
-// PUT /tasks/:id - Update a task
-app.put('/tasks/:id', (req, res) => {
-    const taskId = parseInt(req.params.id);
-    const { title, completed } = req.body;
-    const taskIndex = tasks.findIndex(t => t.id === taskId);
-    
-    if (taskIndex === -1) {
-        return res.status(404).json({ message: 'Task not found' });
-    }
-    
-    if (title !== undefined) {
-        tasks[taskIndex].title = title;
-    }
-    
-    if (completed !== undefined) {
-        tasks[taskIndex].completed = completed;
-    }
-    
-    res.json(tasks[taskIndex]);
+// ✅ GET /tasks - Get all tasks
+app.get('/tasks', (req, res) => {
+    res.json(tasks);
 });
 
-// DELETE /tasks/:id - Delete a task
-app.delete('/tasks/:id', (req, res) => {
+// ✅ DELETE /task/:id - Delete task by ID
+app.delete('/task/:id', (req, res) => {
     const taskId = parseInt(req.params.id);
-    const taskIndex = tasks.findIndex(t => t.id === taskId);
+    const initialLength = tasks.length;
     
-    if (taskIndex === -1) {
-        return res.status(404).json({ message: 'Task not found' });
+    tasks = tasks.filter(task => task.id !== taskId);
+    
+    if (tasks.length === initialLength) {
+        return res.status(404).json({ error: "Task not found!" });
     }
     
-    tasks = tasks.filter(t => t.id !== taskId);
-    res.status(204).end();
+    res.json({ message: "Task deleted successfully!" });
 });
 
-// Start the server
+// Start server
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`Server running on http://localhost:${PORT}`);
 });
